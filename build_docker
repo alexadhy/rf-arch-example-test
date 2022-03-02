@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+REPO_NAME=rf-arch-test-example
+APPNAME=${REPO_NAME}
+
+function add_sshkey() {
+  if [ ! -f ./repo-key ]; then
+    ssh-keygen -q -t rsa -N '' -f repo-key
+  fi
+  KEY_EXISTS=$(gh ssh-key list | grep -wo ${REPO_NAME})
+  if [ "$KEY_EXISTS" == "" ]; then
+    gh ssh-key add -t ${REPO_NAME} <./repo-key.pub
+  fi
+}
+
+function build_docker() {
+  add_sshkey
+  docker build -f ./Dockerfile \
+    --build-arg app_name=${APPNAME} \
+    --build-arg build_opts="-ldflags=-w -s" \
+    -t asia.gcr.io/premium-cipher-340206/example:latest \
+    .
+}
+
+build_docker
+docker push asia.gcr.io/premium-cipher-340206/example:latest
